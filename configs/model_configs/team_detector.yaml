@@ -1,0 +1,38 @@
+# F1 Team Detection Model Configuration
+inherits: yolov11_base.yaml
+
+task: segment  # Semantic segmentation for team livery detection
+nc: 10  # Number of classes (10 F1 teams)
+
+# Model architecture adjustments
+backbone:
+  depth_multiple: 1.5   # Deeper network for complex livery patterns
+  width_multiple: 1.25  # Wider network for color features
+
+head:
+  anchors: 4  # More anchors for varying car angles
+
+training:
+  imgsz: 896  # Larger image size for detailed livery patterns
+  box: 7.5
+  cls: 1.0    # Increased classification weight
+  dfl: 2.0    # Increased feature learning weight
+  mask_ratio: 4  # Mask ratio for segmentation
+
+augmentation:
+  mosaic: 1.0
+  mixup: 0.3   # Increased mixup for better generalization
+  copy_paste: 0.3
+  degrees: 5.0  # Slight rotation allowed
+  translate: 0.2
+  scale: 0.6
+  shear: 0.1
+  perspective: 0.0005
+  hsv_h: 0.015  # Minimal hue variation to preserve team colors
+  hsv_s: 0.4    # Moderate saturation variation
+  hsv_v: 0.4    # Moderate brightness variation
+
+val:
+  conf: 0.3   # Higher confidence for team classification
+  iou: 0.6
+  max_det: 100

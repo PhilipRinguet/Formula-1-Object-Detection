@@ -1,0 +1,30 @@
+# F1 Car Detection Model Configuration
+inherits: yolov11_base.yaml
+
+task: detect
+nc: 1  # Number of classes (F1 car only)
+
+# Model architecture adjustments
+backbone:
+  depth_multiple: 1.33  # Deeper network for complex features
+  width_multiple: 1.25  # Wider network for better feature extraction
+
+training:
+  imgsz: 832  # Increased image size for better small object detection
+  box: 8.0    # Increased box loss weight
+  cls: 0.5    # Single class detection
+
+augmentation:
+  mosaic: 1.0
+  mixup: 0.1
+  copy_paste: 0.1
+  degrees: 0.0      # No rotation augmentation for cars
+  translate: 0.15   # Increased translation
+  scale: 0.7       # Increased scale variation
+  hsv_h: 0.015     # Minimal hue variation
+  hsv_s: 0.5       # Moderate saturation variation
+  hsv_v: 0.4       # Moderate brightness variation
+
+val:
+  conf: 0.25  # Higher confidence threshold for detection
+  iou: 0.65   # Slightly higher IOU threshold

@@ -1,0 +1,55 @@
+# Specific files to ignore
+F1_Real_Time_Video_Object_Detection.ipynb
+image_extraction.ipynb
+F2-9/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+f1env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# VSCode
+.vscode/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Dataset and model files
+data/interim/*
+data/processed/*
+data/raw/*
+data/external/*
+models/*
+
+# MLflow
+mlruns/
+
+# Tensorboard
+runs/
+
+# System files
+.DS_Store
+Thumbs.db

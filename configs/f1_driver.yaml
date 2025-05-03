@@ -1,0 +1,30 @@
+path: data/processed/driver_detection  # Dataset root directory
+train: images/train  # Train images relative to 'path'
+val: images/val      # Validation images relative to 'path'
+test: images/test    # Test images relative to 'path'
+
+# Classes - 20 drivers (2 per team)
+names:
+  0: hamilton      # Mercedes
+  1: russell       # Mercedes
+  2: verstappen    # Red Bull
+  3: perez        # Red Bull
+  4: leclerc      # Ferrari
+  5: sainz        # Ferrari
+  6: norris       # McLaren
+  7: piastri      # McLaren
+  8: ocon         # Alpine
+  9: gasly        # Alpine
+  10: alonso      # Aston Martin
+  11: stroll      # Aston Martin
+  12: albon       # Williams
+  13: sargeant    # Williams
+  14: tsunoda     # AlphaTauri
+  15: ricciardo   # AlphaTauri
+  16: bottas      # Alfa Romeo
+  17: zhou        # Alfa Romeo
+  18: magnussen   # Haas
+  19: hulkenberg  # Haas
+
+# Download script/URL (optional)
+download: https://f1-dataset.org/driver-detection  # Placeholder URL

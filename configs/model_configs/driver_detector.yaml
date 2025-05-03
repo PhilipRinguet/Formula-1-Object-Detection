@@ -1,0 +1,50 @@
+# F1 Driver Detection Model Configuration
+inherits: yolov11_base.yaml
+
+task: segment  # Semantic segmentation for fine-grained driver detection
+nc: 20  # Number of classes (20 F1 drivers)
+
+# Model architecture adjustments
+backbone:
+  depth_multiple: 1.75  # Deeper network for fine-grained features
+  width_multiple: 1.5   # Wider network for better feature discrimination
+
+head:
+  anchors: 5  # More anchors for detailed detection
+  attention: true  # Add attention mechanism for better feature focus
+
+training:
+  imgsz: 1024  # Larger image size for fine details
+  box: 7.5
+  cls: 1.5     # Higher classification weight for driver distinction
+  dfl: 2.5     # Increased feature learning
+  mask_ratio: 4
+  attention_loss: 0.5  # Additional loss for attention mechanism
+
+augmentation:
+  mosaic: 1.0
+  mixup: 0.4    # Heavy mixup for robustness
+  copy_paste: 0.4
+  degrees: 5.0
+  translate: 0.2
+  scale: 0.6
+  shear: 0.1
+  perspective: 0.0007
+  hsv_h: 0.015  # Minimal hue variation
+  hsv_s: 0.4
+  hsv_v: 0.4
+  blur: 0.1     # Slight blur augmentation
+  noise: 0.1    # Noise augmentation
+
+val:
+  conf: 0.35    # Higher confidence threshold
+  iou: 0.55     # Lower IOU for fine-grained detection
+  max_det: 100
+  
+tracking:
+  tracker_type: 'bytetrack'  # Use ByteTrack for consistent tracking
+  track_high_thresh: 0.5
+  track_low_thresh: 0.1
+  new_track_thresh: 0.6
+  track_buffer: 30
+  match_thresh: 0.8

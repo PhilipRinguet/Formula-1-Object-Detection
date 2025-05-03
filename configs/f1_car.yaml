@@ -1,0 +1,11 @@
+path: data/processed/car_detection  # Dataset root directory
+train: images/train  # Train images relative to 'path'
+val: images/val      # Validation images relative to 'path'
+test: images/test    # Test images relative to 'path'
+
+# Classes
+names:
+  0: f1_car  # Class names
+
+# Download script/URL (optional)
+download: https://f1-dataset.org/car-detection  # Placeholder URL

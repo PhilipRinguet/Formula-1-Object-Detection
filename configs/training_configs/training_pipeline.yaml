@@ -1,0 +1,91 @@
+# F1 Detection Pipeline Training Configuration
+
+# Global settings
+tensorboard_dir: "runs/f1_detection"
+mlflow_experiment_name: "f1_detection_pipeline"
+seed: 42
+
+# Car Detector Configuration
+car_detector:
+  model_path: "yolov11s.pt"
+  data_yaml: "configs/f1_car.yaml"
+  optimize_hyperparameters: true
+  n_trials: 10
+  epochs: 100
+  imgsz: 1024
+  training_params:
+    batch: 16
+    lr0: 1e-3
+    weight_decay: 1e-4
+    optimizer: "AdamW"
+    cos_lr: true
+    warmup_epochs: 10
+    hsv_h: 0.1
+    hsv_s: 0.5
+    hsv_v: 0.5
+    scale: 0.8
+    degrees: 15.0
+
+# Team Detector Configuration
+team_detector:
+  model_path: "best_car_detector.pt"
+  data_yaml: "configs/f1_team.yaml"
+  optimize_hyperparameters: true
+  n_trials: 10
+  epochs: 150
+  imgsz: 960
+  training_params:
+    batch: 16
+    lr0: 5e-5
+    weight_decay: 1e-5
+    optimizer: "AdamW"
+    cos_lr: true
+    warmup_epochs: 10
+    cls: 3.0
+    box: 7.0
+    dfl: 2.0
+    hsv_h: 0.05
+    hsv_s: 0.3
+    hsv_v: 0.7
+    scale: 0.6
+    degrees: 10.0
+
+# Driver Detector Configuration
+driver_detector:
+  model_path: "best_team_detector.pt"
+  data_yaml: "configs/f1_driver.yaml"
+  optimize_hyperparameters: true
+  n_trials: 5
+  epochs: 100
+  imgsz: 1088
+  training_params:
+    batch: 8
+    lr0: 5e-5
+    weight_decay: 1e-5
+    optimizer: "AdamW"
+    cos_lr: true
+    warmup_epochs: 10
+    cls: 2.0
+    box: 5.0
+    dfl: 1.2
+    hsv_h: 0.15
+    hsv_s: 0.7
+    hsv_v: 0.7
+    scale: 0.7
+    degrees: 8.0
+
+# Inference settings
+inference:
+  car_detector:
+    conf_threshold: 0.25
+    iou_threshold: 0.65
+    max_det: 20
+  team_detector:
+    conf_threshold: 0.3
+    iou_threshold: 0.6
+    max_det: 15
+  driver_detector:
+    conf_threshold: 0.35
+    iou_threshold: 0.55
+    max_det: 10
+    imgsz: 640  # Reduced for real-time performance
