@@ -2,6 +2,9 @@ import pytest
 import numpy as np
 import torch
 from pathlib import Path
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend
+import matplotlib.pyplot as plt
 from src.visualization.visualize import DetectionVisualizer
 
 def test_visualizer_initialization(visualizer):

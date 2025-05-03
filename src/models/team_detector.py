@@ -93,6 +93,9 @@ class TeamDetector(BaseDetector):
             data_yaml (str): Path to data.yaml file
             n_trials (int): Number of optimization trials
         """
+        if self.model is None:
+            raise ValueError("Model must be loaded before optimizing hyperparameters")
+            
         import optuna
         
         def objective(trial):

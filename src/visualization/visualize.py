@@ -5,6 +5,60 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 import torch
 
+def visualize_results(car_model, team_model, driver_model, sample_images: List[str] = None):
+    """
+    Visualize results from all three models on sample images.
+    
+    Args:
+        car_model: Trained car detection model
+        team_model: Trained team detection model
+        driver_model: Trained driver detection model
+        sample_images: Optional list of paths to sample images
+    """
+    visualizer = DetectionVisualizer()
+    
+    # Use default test images if none provided
+    if not sample_images:
+        # You can modify this path based on your data structure
+        sample_images = ["data/processed/test/image1.jpg", "data/processed/test/image2.jpg"]
+    
+    for img_path in sample_images:
+        # Read image
+        image = cv2.imread(img_path)
+        if image is None:
+            print(f"Could not read image: {img_path}")
+            continue
+            
+        # Get predictions from all models
+        car_results = car_model.predict(image)[0]
+        team_results = team_model.predict(image)[0]
+        driver_results = driver_model.predict(image)[0]
+        
+        # Create visualizations
+        car_vis = visualizer.visualize_detections(image.copy(), 
+                                                [{'box': box, 'confidence': conf, 'label': 'car'} 
+                                                 for box, conf in zip(car_results.boxes.xyxy.cpu().numpy(), 
+                                                                    car_results.boxes.conf.cpu().numpy())])
+        
+        team_vis = visualizer.visualize_detections(image.copy(),
+                                                 [{'box': box, 'confidence': conf, 'team': label} 
+                                                  for box, conf, label in zip(team_results.boxes.xyxy.cpu().numpy(),
+                                                                           team_results.boxes.conf.cpu().numpy(),
+                                                                           team_results.boxes.cls.cpu().numpy())])
+        
+        driver_vis = visualizer.visualize_detections(image.copy(),
+                                                   [{'box': box, 'confidence': conf, 'driver': label}
+                                                    for box, conf, label in zip(driver_results.boxes.xyxy.cpu().numpy(),
+                                                                             driver_results.boxes.conf.cpu().numpy(),
+                                                                             driver_results.boxes.cls.cpu().numpy())])
+        
+        # Create comparison grid
+        visualizer.create_comparison_grid(
+            [image, car_vis, team_vis, driver_vis],
+            ['Original', 'Car Detection', 'Team Detection', 'Driver Detection']
+        )
+        plt.show()
+
 class DetectionVisualizer:
     def __init__(self):
         """Initialize visualizer with team colors and fonts."""

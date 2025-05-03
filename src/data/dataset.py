@@ -33,10 +33,12 @@ class F1Dataset:
             image_path (str): Path to image file
             
         Returns:
-            np.ndarray: Oriented image
+            np.ndarray: Oriented image in BGR format for OpenCV
         """
         try:
             img = Image.open(image_path)
+            img = img.convert('RGB')  # Ensure RGB format
+            
             for orientation in ExifTags.TAGS.keys():
                 if ExifTags.TAGS[orientation] == 'Orientation':
                     break
@@ -48,11 +50,20 @@ class F1Dataset:
                 img = img.rotate(270, expand=True)
             elif exif[orientation] == 8:
                 img = img.rotate(90, expand=True)
-                
-            return np.array(img)
+            
+            # Convert PIL RGB to numpy BGR for OpenCV
+            img_array = np.array(img)
+            return cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
         except (AttributeError, KeyError, IndexError):
             # Return original image if EXIF data not available
-            return cv2.imread(image_path)
+            img = cv2.imread(image_path)
+            if img is None:
+                # If OpenCV fails, try with PIL
+                img = Image.open(image_path)
+                img = img.convert('RGB')
+                img_array = np.array(img)
+                return cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
+            return img
 
     def split_dataset(self, 
                      images_dir: str, 
@@ -73,14 +84,18 @@ class F1Dataset:
         random.seed(seed)
         np.random.seed(seed)
 
+        print(f"Splitting dataset from {images_dir}")
+        print(f"Found images: {os.listdir(images_dir)}")
+
         # Group images by race segments
         def get_race_id(filename: str) -> str:
+            # Extract race ID directly from the start of filename
+            # Format is "race_X_minY.jpg"
             parts = filename.split('_')
-            if len(parts) > 1:
-                timestamp = parts[1]
+            if len(parts) >= 2 and parts[0] == 'race':
                 try:
-                    time_value = int(timestamp.replace('min', ''))
-                    return f'race_{time_value // 10}'
+                    race_num = int(parts[1])  # Get the race number directly
+                    return f'race_{race_num}'
                 except ValueError:
                     return 'unknown'
             return 'unknown'
@@ -94,31 +109,53 @@ class F1Dataset:
                     races[race_id] = []
                 races[race_id].append(img_file)
 
+        print(f"Found races: {races}")
+
         # Split races
         race_ids = list(races.keys())
+        if 'unknown' in race_ids:
+            race_ids.remove('unknown')  # Don't include unknown races in split calculation
         random.shuffle(race_ids)
         
         n_races = len(race_ids)
-        train_idx = int(n_races * train_ratio)
-        val_idx = int(n_races * (train_ratio + val_ratio))
+        
+        # For small datasets, ensure at least 1 race in each split
+        if n_races <= 3:
+            train_ids = race_ids[:1]  # First race for train
+            val_ids = race_ids[1:2]   # Second race for val
+            test_ids = race_ids[2:]    # Rest for test
+        else:
+            train_idx = max(1, int(n_races * train_ratio))
+            val_idx = min(n_races - 1, train_idx + max(1, int(n_races * val_ratio)))
+            train_ids = race_ids[:train_idx]
+            val_ids = race_ids[train_idx:val_idx]
+            test_ids = race_ids[val_idx:]
         
         splits = {
-            'train': race_ids[:train_idx],
-            'val': race_ids[train_idx:val_idx],
-            'test': race_ids[val_idx:]
+            'train': train_ids,
+            'val': val_ids,
+            'test': test_ids
         }
+
+        print(f"Split distribution: {splits}")
 
         # Copy files to respective directories
         for split_name, race_list in splits.items():
             split_img_dir = os.path.join(self.base_dir, split_name, 'images')
             split_label_dir = os.path.join(self.base_dir, split_name, 'labels')
+            os.makedirs(split_img_dir, exist_ok=True)
+            os.makedirs(split_label_dir, exist_ok=True)
             
+            print(f"\nProcessing {split_name} split:")
             for race_id in race_list:
+                print(f"  Race {race_id}: {races[race_id]}")
                 for img_file in races[race_id]:
                     # Copy and auto-orient image
                     img_path = os.path.join(images_dir, img_file)
                     oriented_img = self.auto_orient_image(img_path)
-                    cv2.imwrite(os.path.join(split_img_dir, img_file), oriented_img)
+                    dst_img_path = os.path.join(split_img_dir, img_file)
+                    print(f"  Saving image to: {dst_img_path}")
+                    cv2.imwrite(dst_img_path, oriented_img)
                     
                     # Copy label if exists
                     label_file = img_file.replace('.jpg', '.txt').replace('.png', '.txt')
@@ -181,17 +218,32 @@ class F1Dataset:
         train_img_dir = os.path.join(self.train_dir, 'images')
         train_label_dir = os.path.join(self.train_dir, 'labels')
         
+        # Ensure directories exist
+        os.makedirs(train_img_dir, exist_ok=True)
+        os.makedirs(train_label_dir, exist_ok=True)
+        
+        print(f"Looking for images in: {train_img_dir}")
+        all_images = os.listdir(train_img_dir)
+        print(f"Found {len(all_images)} total files")
+        print(f"Image files: {[f for f in all_images if f.endswith(('.jpg', '.png', '.jpeg'))]}")
+        
         for img_file in os.listdir(train_img_dir):
             if img_file.endswith(('.jpg', '.png', '.jpeg')):
                 img_path = os.path.join(train_img_dir, img_file)
+                print(f"Processing image: {img_path}")
                 img = cv2.imread(img_path)
-                
+                if img is None:
+                    print(f"Failed to read image: {img_path}")
+                    continue
+                    
                 # Apply augmentations
                 augmented = self.apply_augmentations(img, augmentation_config)
                 
                 # Save augmented image
                 aug_filename = f"aug_{img_file}"
-                cv2.imwrite(os.path.join(train_img_dir, aug_filename), augmented)
+                aug_path = os.path.join(train_img_dir, aug_filename)
+                print(f"Saving augmented image to: {aug_path}")
+                cv2.imwrite(aug_path, augmented)
                 
                 # Copy corresponding label file
                 label_file = img_file.replace('.jpg', '.txt').replace('.png', '.txt')
@@ -386,3 +438,52 @@ class F1Dataset:
         
         with open(os.path.join(self.base_dir, 'driver_detection.yaml'), 'w') as f:
             yaml.dump(driver_config, f)
+
+def prepare_datasets():
+    """
+    Prepare all datasets for training the F1 object detection models.
+    This function initializes and prepares car, team, and driver detection datasets.
+    """
+    dataset = F1Dataset(base_dir='data/processed')
+    
+    # Driver-team mapping for F1 2023 season
+    driver_team_mapping = {
+        'hamilton': 'mercedes',
+        'russell': 'mercedes',
+        'verstappen': 'red_bull',
+        'perez': 'red_bull',
+        'leclerc': 'ferrari',
+        'sainz': 'ferrari',
+        'norris': 'mclaren',
+        'piastri': 'mclaren',
+        'alonso': 'aston_martin',
+        'stroll': 'aston_martin',
+        'ocon': 'alpine',
+        'gasly': 'alpine',
+        'albon': 'williams',
+        'sargeant': 'williams',
+        'tsunoda': 'alpha_tauri',
+        'ricciardo': 'alpha_tauri',
+        'bottas': 'alfa_romeo',
+        'zhou': 'alfa_romeo',
+        'magnussen': 'haas',
+        'hulkenberg': 'haas'
+    }
+    
+    # Create specialized detection datasets
+    dataset.create_car_detection_labels()
+    dataset.create_team_detection_labels(driver_team_mapping)
+    
+    # Generate YAML configs for all detection tasks
+    dataset.generate_yaml_configs(driver_team_mapping)
+    
+    # Apply augmentations to training set
+    augmentation_config = {
+        'brightness_limit': 0.2,
+        'contrast_limit': 0.2,
+        'motion_blur_prob': 0.3,
+        'rain_prob': 0.25,
+        'fog_prob': 0.25,
+        'sunflare_prob': 0.3
+    }
+    dataset.augment_training_set(augmentation_config)

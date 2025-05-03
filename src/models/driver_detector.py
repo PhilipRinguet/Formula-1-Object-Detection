@@ -176,6 +176,9 @@ class DriverDetector(BaseDetector):
             video_path (str): Path to input video
             output_path (str): Path to save processed video
         """
+        if self.model is None:
+            raise ValueError("No model loaded")
+            
         return self.model.track(
             source=video_path,
             save=True,
